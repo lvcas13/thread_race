@@ -9,6 +9,10 @@ typedef struct {
     int car_number;
 } Car;
 
+// Mutex para proteger a atualização do vencedor
+pthread_mutex_t mutex;
+int vencedor = -1;  // Armazena o carro vencedor
+
 // Função que simula a corrida de um carro
 void* corrida_do_carro(void* arg) {
     Car* car = (Car*)arg;
@@ -20,6 +24,13 @@ void* corrida_do_carro(void* arg) {
     // O carro "corre" por um tempo aleatório
     sleep((int)tempo_corrida);
     
+    // Usando mutex para definir o vencedor apenas uma vez
+    pthread_mutex_lock(&mutex);
+    if (vencedor == -1) {
+        vencedor = car->car_number;
+    }
+    pthread_mutex_unlock(&mutex);
+    
     printf("Carro %d terminou a corrida em %.2f segundos!\n", car->car_number, tempo_corrida);
     
     pthread_exit(NULL);  // Finaliza a thread
@@ -28,6 +39,7 @@ void* corrida_do_carro(void* arg) {
 // Função principal que inicia a corrida
 int main() {
     srand(time(NULL));  // Inicializa o gerador de números aleatórios
+    pthread_mutex_init(&mutex, NULL);  // Inicializa o mutex
     
     pthread_t threads[5];  // 5 carros (threads)
     Car carros[5];
@@ -46,6 +58,8 @@ int main() {
         pthread_join(threads[i], NULL);
     }
     
-    printf("A corrida terminou!\n");
+    printf("A corrida terminou! O vencedor foi o Carro %d 🚗🏆\n", vencedor);
+    
+    pthread_mutex_destroy(&mutex);  // Destrói o mutex
     return 0;
 }
